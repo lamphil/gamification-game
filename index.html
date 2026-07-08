@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chalk Quest — Slay the Dragon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#16261f;
+    --bg-panel:#1f352c;
+    --bg-panel-2:#243d33;
+    --chalk-white:#f3efe3;
+    --chalk-white-dim:#c9c4b3;
+    --chalk-yellow:#e8c468;
+    --chalk-pink:#e08a9b;
+    --chalk-green:#8fbf95;
+    --line-faint:rgba(243,239,227,0.07);
+    --line-faint-2:rgba(243,239,227,0.12);
+    --shadow-deep:0 20px 50px rgba(0,0,0,0.45);
+    --font-display:'Kalam', cursive;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(243,239,227,0.05), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 110% 20%, rgba(232,196,104,0.04), transparent 60%),
+      var(--bg-deep);
+    background-image:
+      linear-gradient(var(--line-faint) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-faint) 1px, transparent 1px),
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(243,239,227,0.05), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 110% 20%, rgba(232,196,104,0.04), transparent 60%),
+      var(--bg-deep);
+    background-size:34px 34px, 34px 34px, auto, auto, auto;
+    font-family:var(--font-body);
+    color:var(--chalk-white);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px; -webkit-font-smoothing:antialiased;
+  }
+  button:focus-visible, .choice-card:focus-visible{outline:3px solid var(--chalk-yellow); outline-offset:2px;}
+  .stage{width:100%; max-width:720px; position:relative;}
+  .board-frame{
+    background:linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border-radius:14px; box-shadow:var(--shadow-deep), inset 0 0 0 1px var(--line-faint-2);
+    position:relative; overflow:hidden; min-height:580px; display:flex; flex-direction:column;
+  }
+  .board-frame::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:14px;
+    background:linear-gradient(180deg, #cbb281, #8a7550); box-shadow:0 -2px 0 rgba(0,0,0,0.25) inset;
+  }
+  .screen{flex:1; padding:30px 30px 40px; display:flex; flex-direction:column; position:relative; z-index:1;}
+  .hidden{display:none !important;}
+
+  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--chalk-yellow); margin:0 0 6px;}
+  h1.title{font-family:var(--font-display); font-size:42px; line-height:1.05; margin:0 0 10px; color:var(--chalk-white);}
+  p.lede{font-size:15.5px; line-height:1.55; color:var(--chalk-white-dim); margin:0 0 22px; max-width:52ch;}
+
+  /* start screen */
+  #screen-start{align-items:flex-start; justify-content:center;}
+  .quest-steps{display:flex; flex-direction:column; gap:10px; margin:6px 0 26px; width:100%;}
+  .quest-step{
+    font-family:var(--font-mono); font-size:12.5px; color:var(--chalk-white-dim);
+    display:flex; gap:12px; align-items:center; border-top:1px solid var(--line-faint); padding-top:10px;
+  }
+  .quest-step .ic{font-size:20px; width:28px; text-align:center;}
+  .quest-step b{color:var(--chalk-white); font-weight:600;}
+
+  .btn-primary{
+    background:var(--chalk-yellow); color:#2a2110; border:none; font-family:var(--font-mono);
+    font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+    padding:14px 26px; border-radius:3px; cursor:pointer; align-self:flex-start;
+    box-shadow:0 3px 0 #a9853a; transition:transform .08s ease;
+  }
+  .btn-primary:active{transform:translateY(2px); box-shadow:0 1px 0 #a9853a;}
+
+  /* HUD */
+  .hud{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--chalk-white-dim); padding-bottom:16px; border-bottom:1px solid var(--line-faint);
+    margin-bottom:18px; flex-wrap:wrap; gap:12px;
+  }
+  .lives{display:flex; gap:5px; margin-top:4px;}
+  .life-dot{width:9px; height:9px; border-radius:50%; background:var(--chalk-pink); box-shadow:0 0 0 1px rgba(0,0,0,0.2);}
+  .life-dot.spent{background:transparent; border:1px solid var(--line-faint-2);}
+
+  .inventory{display:flex; gap:10px;}
+  .inv-slot{
+    width:38px; height:38px; border-radius:6px; border:1px solid var(--line-faint-2);
+    display:flex; align-items:center; justify-content:center; font-size:19px;
+    background:rgba(0,0,0,0.15); opacity:.3; transition:all .3s ease;
+  }
+  .inv-slot.earned{opacity:1; border-color:var(--chalk-yellow); background:rgba(232,196,104,0.14); box-shadow:0 0 0 1px rgba(232,196,104,0.3);}
+  .inv-slot.pop{animation:pop .5s ease;}
+  @keyframes pop{0%{transform:scale(1);} 40%{transform:scale(1.35);} 100%{transform:scale(1);}}
+
+  /* question card */
+  .question-wrap{flex:1; display:flex; flex-direction:column;}
+  .reward-banner{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--chalk-yellow); margin:0 0 10px; display:flex; align-items:center; gap:8px;
+  }
+  .scenario-card{
+    background:var(--chalk-white); color:#2b2a24; border-radius:3px; padding:22px 24px;
+    box-shadow:0 12px 24px rgba(0,0,0,0.35); transform:rotate(-0.6deg); position:relative; margin-bottom:26px;
+  }
+  .scenario-card::before{
+    content:""; position:absolute; top:-9px; left:28px; width:26px; height:16px; background:#b3543f;
+    border-radius:2px; box-shadow:0 3px 4px rgba(0,0,0,0.3); transform:rotate(-8deg);
+  }
+  .scenario-eyebrow{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#8a7a55; margin:0 0 10px;}
+  .scenario-text{font-family:var(--font-display); font-size:22px; line-height:1.4; margin:0;}
+
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:auto;}
+  .choice-card{
+    background:var(--bg-panel-2); border:1px solid var(--line-faint-2); border-radius:3px;
+    padding:14px 14px 14px 16px; text-align:left; color:var(--chalk-white); cursor:pointer; font-size:14px;
+    line-height:1.35; display:flex; gap:10px; align-items:flex-start;
+    transition:background .12s ease, border-color .12s ease, transform .08s ease;
+  }
+  .choice-card:hover{border-color:var(--chalk-yellow);}
+  .choice-card:active{transform:scale(0.98);}
+  .choice-num{
+    font-family:var(--font-mono); font-size:11px; color:var(--chalk-yellow);
+    border:1px solid rgba(232,196,104,0.4); border-radius:50%; width:18px; height:18px; min-width:18px;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .choice-card.correct{background:rgba(143,191,149,0.18); border-color:var(--chalk-green);}
+  .choice-card.wrong{background:rgba(224,138,155,0.18); border-color:var(--chalk-pink);}
+  .choice-card.disabled{cursor:default;}
+  .choice-card.dim{opacity:.45;}
+  .feedback-line{font-family:var(--font-mono); font-size:12px; color:var(--chalk-white-dim); min-height:18px; margin-top:14px;}
+
+  /* battle / overlay screens */
+  .overlay-screen{align-items:center; justify-content:center; text-align:center;}
+  .overlay-card{max-width:440px;}
+  .battle-scene{font-size:56px; margin:14px 0 8px; letter-spacing:14px;}
+  .battle-scene.shake{animation:shake .5s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(5px);}}
+  .gear-summary{display:flex; justify-content:center; gap:14px; margin:10px 0 24px;}
+  .gear-summary .g{
+    width:52px; height:52px; border-radius:8px; border:1px solid var(--line-faint-2);
+    display:flex; align-items:center; justify-content:center; font-size:26px; background:rgba(0,0,0,0.15);
+  }
+  .gear-summary .g.earned{border-color:var(--chalk-yellow); background:rgba(232,196,104,0.14);}
+  .gear-summary .g.missed{opacity:.3;}
+
+  @media (max-width:520px){
+    h1.title{font-size:30px;}
+    .choices{grid-template-columns:1fr;}
+    .scenario-text{font-size:19px;}
+    .battle-scene{font-size:40px; letter-spacing:8px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .choice-card{transition:none;}
+    .inv-slot.pop, .battle-scene.shake{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="board-frame">
+
+    <!-- START -->
+    <section class="screen" id="screen-start">
+      <p class="eyebrow">Quest · 4 Trials · Gamification in Education</p>
+      <h1 class="title">Chalk Quest</h1>
+      <p class="lede">Four trials on gamification in education stand between you and the dragon. Take your time — answer each one correctly to earn your gear, then face the final trial fully equipped.</p>
+
+      <div class="quest-steps">
+        <div class="quest-step"><span class="ic">⚔️</span><span>Trial 1 — answer right, <b>earn the sword</b>.</span></div>
+        <div class="quest-step"><span class="ic">🛡️</span><span>Trial 2 — answer right, <b>earn the shield</b>.</span></div>
+        <div class="quest-step"><span class="ic">🧥</span><span>Trial 3 — answer right, <b>earn the armor</b>.</span></div>
+        <div class="quest-step"><span class="ic">🐉</span><span>Trial 4 — the final trial. <b>Slay the dragon.</b></span></div>
+      </div>
+      <p class="lede" style="margin-top:-10px;">No timer — think it through. You have 3 lives, though: a wrong answer costs one, and losing all three ends the quest.</p>
+
+      <button class="btn-primary" id="btn-start">Begin the Quest</button>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen hidden" id="screen-game">
+      <div class="hud">
+        <div>LIVES<div class="lives" id="hud-lives"></div></div>
+        <div class="inventory" id="hud-inventory">
+          <div class="inv-slot" id="slot-sword">⚔️</div>
+          <div class="inv-slot" id="slot-shield">🛡️</div>
+          <div class="inv-slot" id="slot-armor">🧥</div>
+        </div>
+      </div>
+
+      <div class="question-wrap">
+        <p class="reward-banner" id="reward-banner">⚔️ Trial 1 of 4 — reward: the sword</p>
+        <div class="scenario-card">
+          <p class="scenario-eyebrow" id="trial-label">Trial 1</p>
+          <p class="scenario-text" id="scenario-text">Loading trial…</p>
+        </div>
+        <div class="choices" id="choices"></div>
+        <div class="feedback-line" id="feedback-line">&nbsp;</div>
+      </div>
+    </section>
+
+    <!-- BATTLE / VICTORY -->
+    <section class="screen overlay-screen hidden" id="screen-victory">
+      <div class="overlay-card">
+        <p class="eyebrow">Final Trial</p>
+        <h1 class="title" id="victory-title">The dragon falls.</h1>
+        <div class="battle-scene" id="battle-scene">🧙 ⚔️ 🐉</div>
+        <p class="lede" style="margin:0 auto 8px;" id="victory-line">Congratulations, adventurer — the quest is complete.</p>
+        <div class="gear-summary" id="gear-summary"></div>
+        <button class="btn-primary" id="btn-restart-1" style="align-self:center;">Quest Again</button>
+      </div>
+    </section>
+
+    <!-- DEFEAT -->
+    <section class="screen overlay-screen hidden" id="screen-defeat">
+      <div class="overlay-card">
+        <p class="eyebrow">Quest Ended</p>
+        <h1 class="title">Out of lives.</h1>
+        <div class="battle-scene">😵 🐉</div>
+        <p class="lede" style="margin:0 auto 24px;" id="defeat-line">The dragon waits. Study up and try again.</p>
+        <button class="btn-primary" id="btn-restart-2" style="align-self:center;">Try Again</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const TRIALS = [
+    {
+      reward:"sword", icon:"⚔️", label:"the sword",
+      s:"What does research generally show about gamification's effect on learning outcomes?",
+      o:["It has no measurable effect on anything",
+         "It reliably boosts motivation and engagement, with more mixed effects on knowledge retention itself",
+         "It always raises test scores more than any other method",
+         "It only works for elementary-age learners"], c:1,
+      e:"Meta-analyses consistently find strong gains in engagement and motivation; effects on actual learning gains are real but more variable, depending heavily on design — the sword strikes, but its force depends on how it's swung."
+    },
+    {
+      reward:"shield", icon:"🛡️", label:"the shield",
+      s:"Why does gamification work as a learning strategy in the first place?",
+      o:["It removes the need for feedback",
+         "It taps into intrinsic and extrinsic motivation through feedback, autonomy, and a visible sense of progress",
+         "It eliminates cognitive effort from the task",
+         "It only works because it's novel, and stops working after one use"], c:1,
+      e:"Its mechanism lines up with Self-Determination Theory — autonomy, competence, and relatedness — plus fast feedback loops that make progress visible. The shield holds because the theory behind it is sound."
+    },
+    {
+      reward:"armor", icon:"🧥", label:"the armor",
+      s:"Is gamification the same thing as game-based learning?",
+      o:["Yes, the terms are interchangeable",
+         "No — gamification adds game elements like points or badges to a non-game activity, while game-based learning uses an actual game as the learning activity itself",
+         "No — game-based learning is only for children",
+         "No — gamification requires a computer and game-based learning does not"], c:1,
+      e:"Gamification borrows game mechanics and layers them onto existing tasks; game-based learning embeds the learning inside an actual game. Knowing the difference is armor against mixing up the two."
+    },
+    {
+      reward:"dragon", icon:"🐉", label:"the dragon",
+      s:"Which of these are considered the four primary categories of gamification?",
+      o:["Achievement-based, Reward-based, Progress-based, and Competition-based",
+         "Structural, Content, Narrative-based, and Assessment-based",
+         "Multiple choice, True/False, Fill-in-the-blank, and Essay",
+         "Formative, Summative, Diagnostic, and Norm-referenced assessment"], c:0,
+      e:"Achievement-based (badges, trophies), reward-based (points, prizes), progress-based (levels, progress bars), and competition-based (leaderboards, challenges) each pull a different psychological lever — the dragon falls to all four working together."
+    }
+  ];
+
+  let trialIdx = 0, lives = 3, gear = {sword:false, shield:false, armor:false};
+  let locked = false;
+
+  const el = id => document.getElementById(id);
+  const screens = { start: el('screen-start'), game: el('screen-game'), victory: el('screen-victory'), defeat: el('screen-defeat') };
+  const hudLives = el('hud-lives');
+  const rewardBanner = el('reward-banner'), trialLabel = el('trial-label'), scenarioText = el('scenario-text');
+  const choicesEl = el('choices'), feedbackLine = el('feedback-line');
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+  }
+
+  function renderLives(){
+    hudLives.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const d = document.createElement('span');
+      d.className = 'life-dot' + (i >= lives ? ' spent' : '');
+      hudLives.appendChild(d);
+    }
+  }
+
+  function renderInventory(){
+    el('slot-sword').classList.toggle('earned', gear.sword);
+    el('slot-shield').classList.toggle('earned', gear.shield);
+    el('slot-armor').classList.toggle('earned', gear.armor);
+  }
+
+  function startGame(){
+    trialIdx = 0; lives = 3; gear = {sword:false, shield:false, armor:false};
+    renderLives(); renderInventory();
+    loadTrial();
+    showScreen('game');
+  }
+
+  function loadTrial(){
+    locked = false;
+    const t = TRIALS[trialIdx];
+    trialLabel.textContent = 'Trial ' + (trialIdx+1) + ' of 4';
+    if(trialIdx < 3){
+      rewardBanner.innerHTML = t.icon + ' Trial ' + (trialIdx+1) + ' of 4 — reward: ' + t.label;
+    } else {
+      rewardBanner.innerHTML = '🐉 Final Trial — slay the dragon';
+    }
+    scenarioText.textContent = t.s;
+    feedbackLine.innerHTML = '&nbsp;';
+    renderLives(); renderInventory();
+
+    choicesEl.innerHTML = '';
+    t.o.forEach((opt,i) => {
+      const b = document.createElement('button');
+      b.className = 'choice-card';
+      b.innerHTML = '<span class="choice-num">' + (i+1) + '</span><span>' + opt + '</span>';
+      b.addEventListener('click', () => answer(i));
+      choicesEl.appendChild(b);
+    });
+
+  }
+
+  function answer(choiceIdx){
+    if(locked) return;
+    locked = true;
+    const t = TRIALS[trialIdx];
+    const cards = choicesEl.querySelectorAll('.choice-card');
+
+    cards.forEach((c,i) => {
+      c.classList.add('disabled');
+      if(i === t.c) c.classList.add('correct');
+      if(i !== t.c) c.classList.add('dim');
+    });
+
+    const correct = choiceIdx === t.c;
+    if(correct){
+      if(t.reward !== 'dragon'){
+        gear[t.reward] = true;
+        feedbackLine.textContent = 'Earned! ' + t.e;
+      } else {
+        feedbackLine.textContent = t.e;
+      }
+      feedbackLine.style.color = 'var(--chalk-green)';
+      renderInventory();
+      const slot = el('slot-' + t.reward);
+      if(slot){ slot.classList.add('pop'); setTimeout(()=>slot.classList.remove('pop'), 500); }
+    } else {
+      if(choiceIdx >= 0) cards[choiceIdx].classList.add('wrong');
+      lives--;
+      feedbackLine.textContent = 'Not quite. ' + t.e;
+      feedbackLine.style.color = 'var(--chalk-pink)';
+    }
+    renderLives();
+
+    setTimeout(() => {
+      if(lives <= 0){ endDefeat(); return; }
+      if(trialIdx === 3){ endVictory(); return; }
+      trialIdx++;
+      loadTrial();
+    }, 1500);
+  }
+
+  function endVictory(){
+    const summary = el('gear-summary');
+    summary.innerHTML = '';
+    [['sword','⚔️'],['shield','🛡️'],['armor','🧥']].forEach(([key,icon]) => {
+      const g = document.createElement('div');
+      g.className = 'g' + (gear[key] ? ' earned' : ' missed');
+      g.textContent = icon;
+      summary.appendChild(g);
+    });
+    const fullyGeared = gear.sword && gear.shield && gear.armor;
+    el('victory-title').textContent = 'The dragon falls.';
+    el('victory-line').textContent = fullyGeared
+      ? 'Fully equipped and unstoppable — congratulations, adventurer. The quest is complete.'
+      : 'Even without full gear, courage carried the day — congratulations, adventurer. The quest is complete.';
+    el('battle-scene').classList.add('shake');
+    showScreen('victory');
+  }
+
+  function endDefeat(){
+    el('defeat-line').textContent = 'You made it to Trial ' + (trialIdx+1) + ' of 4. The dragon waits — study up and try again.';
+    showScreen('defeat');
+  }
+
+  el('btn-start').addEventListener('click', startGame);
+  el('btn-restart-1').addEventListener('click', startGame);
+  el('btn-restart-2').addEventListener('click', startGame);
+
+  document.addEventListener('keydown', (e) => {
+    if(screens.game.classList.contains('hidden')) return;
+    if(['1','2','3','4'].includes(e.key)){
+      const i = parseInt(e.key,10) - 1;
+      const cards = choicesEl.querySelectorAll('.choice-card');
+      if(cards[i] && !locked) answer(i);
+    }
+  });
+
+  renderLives(); renderInventory();
+})();
+</script>
+</body>
+</html>
